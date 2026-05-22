@@ -1,0 +1,117 @@
+import type { ParamSchema } from '@/visualizations/types';
+
+export const mercuryParams = {
+  ballCount: 4,
+  smoothness: 0.6,
+  metallicity: 0.85,
+  radius: 0.55,
+  bassSwell: 0.45,
+  midInflation: 0.3,
+  trebleRipple: 0.15,
+  rotateSpeed: 0.18,
+  cameraDistance: 3.5,
+  innerColor: '#8ecbff',
+  rimColor: '#f4f4f4',
+  background: '#0a0a0a',
+  exposure: 1.0,
+};
+
+export type MercuryParams = typeof mercuryParams;
+
+export const mercurySchema: ParamSchema = {
+  ballCount: {
+    type: 'range',
+    label: { zh: '球体数', en: 'Metaballs' },
+    min: 2,
+    max: 6,
+    step: 1,
+    group: 'GEOMETRY',
+  },
+  radius: {
+    type: 'range',
+    label: { zh: '球半径', en: 'Ball Radius' },
+    min: 0.15,
+    max: 1.2,
+    step: 0.01,
+    group: 'GEOMETRY',
+  },
+  smoothness: {
+    type: 'range',
+    label: { zh: '融合度', en: 'Smoothness' },
+    min: 0.05,
+    max: 1.5,
+    step: 0.01,
+    group: 'GEOMETRY',
+  },
+  cameraDistance: {
+    type: 'range',
+    label: { zh: '相机距离', en: 'Camera Dist' },
+    min: 1.5,
+    max: 7,
+    step: 0.05,
+    group: 'GEOMETRY',
+  },
+  metallicity: {
+    type: 'range',
+    label: { zh: '金属度', en: 'Metallicity' },
+    min: 0,
+    max: 1,
+    step: 0.01,
+    group: 'COLOR',
+  },
+  exposure: {
+    type: 'range',
+    label: { zh: '曝光', en: 'Exposure' },
+    min: 0.2,
+    max: 2.5,
+    step: 0.02,
+    group: 'COLOR',
+  },
+  bassSwell: {
+    type: 'range',
+    label: { zh: '低频膨胀', en: 'Bass Swell' },
+    min: 0,
+    max: 1.5,
+    step: 0.01,
+    group: 'MOTION',
+  },
+  midInflation: {
+    type: 'range',
+    label: { zh: '中频抖动', en: 'Mid Inflation' },
+    min: 0,
+    max: 1.5,
+    step: 0.01,
+    group: 'MOTION',
+  },
+  trebleRipple: {
+    type: 'range',
+    label: { zh: '高频涟漪', en: 'Treble Ripple' },
+    min: 0,
+    max: 0.6,
+    step: 0.005,
+    group: 'MOTION',
+  },
+  rotateSpeed: {
+    type: 'range',
+    label: { zh: '公转速度', en: 'Rotate Speed' },
+    min: -1,
+    max: 1,
+    step: 0.01,
+    group: 'MOTION',
+  },
+  innerColor: {
+    type: 'color',
+    label: { zh: '内辉色', en: 'Inner Glow' },
+    group: 'COLOR',
+  },
+  rimColor: {
+    type: 'color',
+    label: { zh: '边缘色', en: 'Rim Color' },
+    group: 'COLOR',
+  },
+  background: {
+    type: 'color',
+    label: { zh: '背景', en: 'Background' },
+    group: 'COLOR',
+  },
+};

@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    color: #f4f4f4;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Disable default text selection on layout chrome (still selectable on content) */
+  .no-select {
+    user-select: none;
+  }
+}
+
+@layer components {
+  .label {
+    @apply uppercase tracking-museum text-[10px] text-dim;
+  }
+  .label-bone {
+    @apply uppercase tracking-museum text-[10px] text-bone;
+  }
+  .title-xl {
+    @apply font-bold uppercase text-3xl md:text-4xl tracking-[0.05em];
+  }
+}
+
+/* Scrollbar — minimal */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

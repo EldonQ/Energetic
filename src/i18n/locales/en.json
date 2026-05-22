@@ -1,0 +1,27 @@
+{
+  "brand": {
+    "name": "ECHOES\nART MUSEUM",
+    "tagline": "SPATIAL CURATION FOR SYNTHETIC MEMORY"
+  },
+  "labels": {
+    "archiveId": "ARCHIVE ID / AUDIO STUDY",
+    "soundSculpture": "SOUND SCULPTURE",
+    "sealed": "SEALED",
+    "nowPlaying": "NOW PLAYING",
+    "unknownArchive": "Unknown Archive",
+    "archive": "ARCHIVE",
+    "play": "PLAY",
+    "pause": "PAUSE",
+    "next": "NEXT",
+    "prev": "PREV"
+  },
+  "messages": {
+    "noTracks": "Drop .mp3 files into /public/audio to begin.",
+    "clickToBegin": "CLICK ANY TRACK TO BEGIN"
+  },
+  "intensity": {
+    "ambient": "Ambient",
+    "pulse": "Pulse",
+    "hint": "Global reactivity · Ambient (calmer) / Pulse (default)"
+  }
+}

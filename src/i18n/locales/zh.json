@@ -1,0 +1,27 @@
+{
+  "brand": {
+    "name": "ECHOES\n回声美术馆",
+    "tagline": "为合成记忆而设的空间策展"
+  },
+  "labels": {
+    "archiveId": "档案编号 / 声音研究",
+    "soundSculpture": "声音雕塑",
+    "sealed": "已封存",
+    "nowPlaying": "正在播放",
+    "unknownArchive": "未命名档案",
+    "archive": "档案库",
+    "play": "播放",
+    "pause": "暂停",
+    "next": "下一首",
+    "prev": "上一首"
+  },
+  "messages": {
+    "noTracks": "将 .mp3 文件放入 /public/audio 文件夹以开始。",
+    "clickToBegin": "点击任意曲目开始播放"
+  },
+  "intensity": {
+    "ambient": "氛围",
+    "pulse": "律动",
+    "hint": "全局律动强度 · 氛围（更安静）/律动（默认）"
+  }
+}
