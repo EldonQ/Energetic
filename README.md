@@ -2,8 +2,8 @@
 
 > Drop your MP3s, get an audio-reactive WebGL gallery in dark museum aesthetics.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/EldonQ/Energetic)
-[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-181717?logo=github)](https://github.com/EldonQ/Energetic/actions/workflows/deploy-pages.yml)
+[![Version](https://img.shields.io/badge/version-v1.0.0-bfe5ff?labelColor=0a0a0a)](https://github.com/EldonQ/Energetic/releases/tag/v1.0.0)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-eldonq.github.io%2FEnergetic-181717?logo=github)](https://eldonq.github.io/Energetic/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 
 A desktop music-visualization web app inspired by curated-archive aesthetics:
@@ -69,21 +69,9 @@ npm run preview      # serve dist/ on http://localhost:4173
 
 ## ☁️ Deployment
 
-Two ready-to-use paths — pick whichever you prefer. Both produce a static SPA
-out of `dist/`.
+The build emits a vanilla static SPA in `dist/` — drop it onto any static host.
 
-### 1. Vercel (one-click)
-
-Click the **Deploy with Vercel** badge at the top. Vercel will:
-
-1. Fork the repo into your account
-2. Detect the Vite preset (`vercel.json` is committed) and run `npm install &&
-   npm run build`
-3. Serve `dist/` at `https://<your-project>.vercel.app`
-4. Add an entry to your repo's **Deployments** tab via the Vercel GitHub bot
-5. Auto-deploy on every push thereafter
-
-### 2. GitHub Pages (via CI)
+### GitHub Pages (default, via CI)
 
 A workflow at `.github/workflows/deploy-pages.yml` builds and deploys to the
 `github-pages` environment on every push to `main`. Steps after fork:
@@ -97,11 +85,11 @@ A workflow at `.github/workflows/deploy-pages.yml` builds and deploys to the
 The build sets `VITE_BASE=/Energetic/` so all asset URLs (including the audio
 manifest) work under the subpath.
 
-### 3. Anything else
+### Other hosts
 
 `dist/` is a vanilla static SPA — Netlify, Cloudflare Pages, S3 + CloudFront,
-or any static host work the same way. Set `VITE_BASE` if you serve from a
-non-root path.
+Vercel, or any static host work the same way. Set `VITE_BASE` if you serve
+from a non-root path.
 
 ## 🎵 About the MP3s
 
