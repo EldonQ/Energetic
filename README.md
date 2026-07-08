@@ -104,6 +104,19 @@ into a `manifest.json` consumed by the player. Filenames of the form
 > committed to a fork of this repo so visitors actually hear something.
 > Don't push tracks you don't have rights to redistribute.
 
+## 🎤 Synced lyrics (optional)
+
+Drop standard `.lrc` files into `public/LRC/` (gitignored, like the MP3s) and
+matching tracks get a museum-caption style lyric line near the bottom of the
+canvas — current line engraved, next line ghosted. Files are matched to
+tracks by normalized title (bracketed asides ignored), production-credit
+header lines are filtered out, and tracks without a match simply show
+nothing. Press `L` to toggle the overlay.
+
+The feature is fully self-contained: `src/lyrics/` +
+`plugins/vite-plugin-lrc-manifest.ts`, mounted by one line each in `App.tsx`
+and `vite.config.ts` — delete those to remove it entirely.
+
 ## 🏗 Stack
 
 - **Vite 5** + **React 18** + **TypeScript** — build & framework
@@ -161,6 +174,7 @@ viz freeze motion for accessibility.
 | `Space` | Play / pause |
 | `1` … `5` | Switch to viz I through V |
 | `P` | Toggle parameter panel |
+| `L` | Toggle lyrics overlay |
 
 ## ⚠️ Notes & limitations
 

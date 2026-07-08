@@ -7,6 +7,7 @@ import { Timestamp } from '@/components/hud/Timestamp';
 import { Playlist } from '@/components/playlist/Playlist';
 import { ParamPanel } from '@/components/controls/ParamPanel';
 import { NowShowingToast } from '@/components/controls/NowShowingToast';
+import { LyricsOverlay } from '@/lyrics/LyricsOverlay';
 import { useManifest } from '@/audio/useManifest';
 import { useAudio } from '@/audio/useAudio';
 import { usePlayerStore } from '@/store/playerStore';
@@ -37,6 +38,7 @@ export default function App() {
       <Playlist />
       <TrackTitle />
       <Timestamp />
+      <LyricsOverlay />
       <Footer />
 
       <ParamPanel />

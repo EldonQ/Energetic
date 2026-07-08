@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import glsl from 'vite-plugin-glsl';
 import path from 'node:path';
 import { audioManifest } from './plugins/vite-plugin-audio-manifest';
+import { lrcManifest } from './plugins/vite-plugin-lrc-manifest';
 
 // `base` lets the same build work on different hosts:
 //   - Vercel / Netlify / preview ........... default "/"
@@ -12,7 +13,7 @@ const base = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({
   base,
-  plugins: [react(), glsl(), audioManifest()],
+  plugins: [react(), glsl(), audioManifest(), lrcManifest()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
