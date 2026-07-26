@@ -15,3 +15,5 @@ public/audio/manifest.json
 public/audio/*.mp3
 public/LRC/
 .claude/settings.local.json
+# ad-hoc verification screenshots dropped at repo root
+/*.png

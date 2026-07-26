@@ -7,7 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 
 A desktop music-visualization web app inspired by curated-archive aesthetics:
-five hand-tuned audio-reactive scenes, museum-style typography, EN/中 toggle,
+five hand-tuned audio-reactive scenes plus a monochrome particle-sphere study,
+museum-style typography, EN/中 toggle,
 and a real-time intensity selector. Built on Vite + React 18 + Three.js
 (`@react-three/fiber`) with a custom envelope/onset/beat audio analyser.
 
@@ -16,8 +17,8 @@ and a real-time intensity selector. Built on Vite + React 18 + Three.js
 ### 中文 TL;DR
 
 深色极简的本地音乐可视化网页。把 MP3 拖进 `public/audio/`，Vite 插件自动扫描
-生成播放列表 + ID3 元数据，5 套可视化（晶体 / 数据壁 / 液态金属 / 点云断层 /
-山脊飞行）按节拍、能量、低中高频实时响应。右上角可切换 **氛围 / 律动** 两档
+生成播放列表 + ID3 元数据，6 套可视化（晶体 / 数据壁 / 液态金属 / 点云断层 /
+山脊飞行 / 尘球）按节拍、能量、低中高频实时响应。右上角可切换 **氛围 / 律动** 两档
 全局律动强度，以及中/英文界面。本仓库无内置 MP3，请自行准备版权允许的素材。
 
 ---
@@ -31,6 +32,7 @@ and a real-time intensity selector. Built on Vite + React 18 + Three.js
 | **III** | **Mercury** | SDF-raymarched smooth-blended spheres; bass stretches orbits, beat snaps camera in. | Liquid metal / mercury renderings |
 | **IV** | **Strata** | GPU point cloud bucketed into horizontal layers; bottom layers ride bass, top layers shimmer on treble; beat sweeps a vertical scan line. | Quayola "Strata" |
 | **V** | **Heightfield** | Raymarched fbm mountains, forward flying camera; bass lifts the ridges, treble sparkles slopes, beat fires lightning across the sky. | Inigo Quilez "Elevated" |
+| **VI** | **Dust** | Monochrome stippled particle sphere — quasi-lattice shell, mid-driven turbulent wisps, faint dust halo; bass breathes, beats vent plumes from the poles. | Dotted-sphere archive plates |
 
 ## 🎚 Global intensity tiers
 
@@ -136,9 +138,9 @@ src/
 │   ├── analyzer.ts        envelope-followed bands, onset/beat, log spectrum
 │   └── useAudioData.ts    shared 60-fps feature refs (no React re-renders)
 ├── visualizations/        each viz is a self-contained VizModule
-│   ├── crystal/   monolith/   mercury/   strata/   heightfield/
+│   ├── crystal/   monolith/   mercury/   strata/   heightfield/   dust/
 │   ├── types.ts           VizModule, ParamSchema
-│   └── index.ts           registry → drives the I/II/III/IV/V switcher
+│   └── index.ts           registry → drives the I/II/III/IV/V/VI switcher
 ├── components/
 │   ├── layout/            Header / footer / IntensityToggle / LanguageToggle
 │   ├── controls/          VizSwitcher, ParamPanel (auto-generated from schemas)
@@ -172,7 +174,7 @@ viz freeze motion for accessibility.
 | Key | Action |
 |-----|--------|
 | `Space` | Play / pause |
-| `1` … `5` | Switch to viz I through V |
+| `1` … `6` | Switch to viz I through VI |
 | `P` | Toggle parameter panel |
 | `L` | Toggle lyrics overlay |
 

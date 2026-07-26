@@ -3,11 +3,12 @@ import { monolithViz } from './monolith';
 import { mercuryViz } from './mercury';
 import { strataViz } from './strata';
 import { heightfieldViz } from './heightfield';
+import { dustViz } from './dust';
 import type { VizModule } from './types';
 
 /**
  * Registry of all available visualization modules.
- * Order here determines the order in the switcher (I, II, III, IV, V).
+ * Order here determines the order in the switcher (I, II, III, IV, V, VI).
  *
  * To add a new visualization:
  *   1. Create a new folder under src/visualizations/<id>/
@@ -20,6 +21,7 @@ export const VIZ_MODULES: VizModule<any>[] = [
   mercuryViz,
   strataViz,
   heightfieldViz,
+  dustViz,
 ];
 
 export function getVizById(id: string): VizModule<any> | undefined {
