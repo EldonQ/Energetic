@@ -11,7 +11,7 @@ import { parseLrc, matchLrcFile, findActiveIndex, type LrcLine } from './lrc';
  */
 
 const POLL_MS = 200;
-const AUDIO_EL_ID = 'echoes-audio';
+export const AUDIO_EL_ID = 'echoes-audio';
 
 let indexPromise: Promise<string[]> | null = null;
 
