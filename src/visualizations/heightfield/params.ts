@@ -1,23 +1,23 @@
 import type { ParamSchema } from '@/visualizations/types';
 
 export const heightfieldParams = {
-  flightSpeed: 0.45,
-  ridgeHeight: 1.7,
-  terrainScale: 1.6,
-  fogDensity: 0.07,
-  cameraHeight: 1.2,
-  bassLift: 0.25,
-  trebleShimmer: 0.45,
-  beatLightning: 0.25,
-  sunSize: 0.2,
+  flightSpeed: 0.58,
+  ridgeHeight: 0.72,
+  terrainScale: 1.29,
+  fogDensity: 1,
+  cameraHeight: 1.31,
+  bassLift: 1.5,
+  trebleShimmer: 1,
+  beatLightning: 0,
+  sunSize: 0.48,
   exposure: 0.4,
   hueShift: 0,
-  ridgeColor: '#141d27',
-  valleyColor: '#030408',
-  skyColor: '#070d18',
-  sunColor: '#6b5433',
-  beatColor: '#fff7d0',
-  background: '#04060a',
+  ridgeColor: '#0b3360',
+  valleyColor: '#ffffff',
+  skyColor: '#3d76e1',
+  sunColor: '#ddc8ac',
+  beatColor: '#fdfdfc',
+  background: '#ffffff',
 };
 
 export type HeightfieldParams = typeof heightfieldParams;
