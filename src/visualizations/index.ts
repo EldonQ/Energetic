@@ -24,7 +24,7 @@ export const VIZ_MODULES: VizModule<any>[] = [
   dustViz,
 ];
 
-export function getVizById(id: string): VizModule<any> | undefined {
+function getVizById(id: string): VizModule<any> | undefined {
   return VIZ_MODULES.find((v) => v.id === id);
 }
 

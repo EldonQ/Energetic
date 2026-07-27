@@ -20,7 +20,7 @@ import { useUIStore } from '@/store/uiStore';
  * 60fps band data flows through refs only — no React re-renders.
  * currentTime is throttled (~4 Hz) into Zustand for the timestamp HUD.
  */
-export function useAudioData() {
+function useAudioData() {
   const bandsRef = useRef<Bands>({ bass: 0, mid: 0, treble: 0, overall: 0 });
   const analyzerRef = useRef<AudioAnalyzer | null>(null);
   const rafRef = useRef<number | null>(null);

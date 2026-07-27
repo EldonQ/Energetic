@@ -122,7 +122,7 @@ and `vite.config.ts` — delete those to remove it entirely.
 ## 🏗 Stack
 
 - **Vite 5** + **React 18** + **TypeScript** — build & framework
-- **Three.js r169** via **@react-three/fiber** + **@react-three/drei**
+- **Three.js r169** via **@react-three/fiber**
 - **@react-three/postprocessing** — Bloom + vignette
 - **Web Audio API** — native `AnalyserNode` (fftSize 1024, 512 bins)
 - **Zustand** + persist — UI / player / viz state

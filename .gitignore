@@ -17,3 +17,7 @@ public/LRC/
 .claude/settings.local.json
 # ad-hoc verification screenshots dropped at repo root
 /*.png
+# local-only publishing kit (article drafts, screenshots, demo video) — never push
+/publish/
+# local demo-video recording tool (needs `npm i --no-save puppeteer-core`)
+/record-demo.mjs
