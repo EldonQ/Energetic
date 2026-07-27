@@ -1,31 +1,61 @@
 /**
- * Two professional reactivity tiers — applied as a post-process pass over the
- * computed AudioFeatures. Lets the user choose between gallery-quiet and
- * the engineer-tuned default without touching per-viz dials.
+ * Two reactivity personalities — selected globally, realised INSIDE the
+ * analyser as independent tunings (time constants + event semantics).
+ * Neither derives from the other: two aesthetics, not two volumes.
  *
- *   ambient : 安静展厅 — onsets / beats softened, swings narrowed.
- *             A calmer-than-default mode for ambient / classical listening.
- *   pulse   : 标准律动 — engineer-tuned defaults; identity transform
- *             (= no post-processing). The recommended baseline for most music.
+ *   ambient : 氛围（潮汐）— slow-attack envelopes breathe with phrase-level
+ *             dynamics; "events" are swells (sustained energy rises above a
+ *             ~3 s baseline) that bloom for seconds instead of flashing.
+ *   pulse   : 律动（节拍）— engineer-tuned defaults; fast attack / slow
+ *             release, spectral-flux beat hits with ~300 ms pulses.
+ *             Identical to the pre-tier analyser behaviour.
  *
- * Coefficients multiply the analyser's "punchy" outputs. They never affect the
- * raw legacy bands (so colour mixing & smooth motion stay calm), only the
- * reactive accents.
+ * The AudioFeatures interface is shared: in ambient, `beat` / `beatPulse`
+ * carry swell events, so every visualisation gains both personalities
+ * without any per-viz changes.
  */
 export type IntensityTier = 'ambient' | 'pulse';
-export interface IntensityProfile {
-  envScale: number;   // bassEnv / midEnv / trebleEnv multiplier
-  onsetScale: number; // onset multiplier
-  beatScale: number;  // beatPulse multiplier
-  normScale: number;  // *Norm + levelNorm multiplier (used for big swings)
-  /** Whether a "beat" is allowed to flip true at all. Keeps Ambient calm. */
-  beatPassThrough: number; // 0 = no beat events, 1 = all, in-between = probability
+export interface AnalyzerTuning {
+  /** Envelope follower [attack, release] per band — see envFollow(). */
+  bassEnvAR: [number, number];
+  midEnvAR: [number, number];
+  trebleEnvAR: [number, number];
+  onsetAR: [number, number];
+  /** 'beat' = spectral-flux hits · 'swell' = phrase-level energy rises. */
+  eventMode: 'beat' | 'swell';
+  /** beatPulse linear decay per second (3 → ~330 ms; 0.4 → ~2.5 s bloom). */
+  pulseDecayPerSec: number;
+  /** Log-spectrum smoothing rate; 0 = raw per-frame bars. */
+  spectrumFollow: number;
+  /** PeakTracker decay/sec for adaptive normalisation. */
+  normDecayPerSec: number;
 }
-export const INTENSITY_PROFILES: Record<IntensityTier, IntensityProfile> = {
-  ambient: { envScale: 0.55, onsetScale: 0.45, beatScale: 0.45, normScale: 0.7, beatPassThrough: 0.6 },
-  // Identity transform — matches the analyser's raw output, i.e. the
-  // "pre-intensity-tier" behaviour from earlier builds.
-  pulse:   { envScale: 1.0,  onsetScale: 1.0,  beatScale: 1.0,  normScale: 1.0, beatPassThrough: 1.0 },
+export const ANALYZER_TUNINGS: Record<IntensityTier, AnalyzerTuning> = {
+  // Tidal personality — the tide lives in the RELEASE (afterglow), never the
+  // attack (slow attack reads as audio/visual lag). Releases are ~1.5× slower
+  // than pulse — slow enough to glow, fast enough that envelopes fall back
+  // between hits: dynamics come from that contrast.
+  ambient: {
+    bassEnvAR: [0.50, 0.04],
+    midEnvAR: [0.45, 0.05],
+    trebleEnvAR: [0.55, 0.06],
+    onsetAR: [0.60, 0.08],
+    eventMode: 'swell',
+    pulseDecayPerSec: 0.4,
+    spectrumFollow: 0.08,
+    normDecayPerSec: 0.06,
+  },
+  // Engineer defaults — the exact constants the analyser always shipped with.
+  pulse: {
+    bassEnvAR: [0.7, 0.06],
+    midEnvAR: [0.55, 0.08],
+    trebleEnvAR: [0.65, 0.10],
+    onsetAR: [0.85, 0.12],
+    eventMode: 'beat',
+    pulseDecayPerSec: 3.0,
+    spectrumFollow: 0,
+    normDecayPerSec: 0.18,
+  },
 };
 
 /**
@@ -126,6 +156,9 @@ class PeakTracker {
     this.decayPerSec = decayPerSec;
     this.floor = floor;
   }
+  setDecay(perSec: number): void {
+    this.decayPerSec = perSec;
+  }
   update(v: number, dt: number): number {
     if (v > this.peak) this.peak = v;
     else this.peak = Math.max(this.floor, this.peak - this.decayPerSec * dt);
@@ -171,6 +204,16 @@ export class AudioAnalyzer {
   private refractoryMs = 80;            // min ms between beats
   private onsetThreshold = 1.6;          // sigmas above rolling mean
 
+  // Personality tuning (time constants + event semantics)
+  private tier: IntensityTier = 'pulse';
+  private tuning: AnalyzerTuning = ANALYZER_TUNINGS.pulse;
+
+  // Swell detector state (ambient) — phrase-level energy vs slow baseline
+  private swellBaseline = 0;
+  private static readonly SWELL_THRESHOLD = 0.035;   // rise above baseline
+  private static readonly SWELL_MIN_ENERGY = 0.08;   // ignore near-silence
+  private static readonly SWELL_REFRACTORY_MS = 1800;
+
   // Timekeeping
   private wallMs = 0;
 
@@ -194,11 +237,31 @@ export class AudioAnalyzer {
   }
 
   /**
+   * Switch reactivity personality. Cheap no-op when unchanged — safe to call
+   * every frame. Analyser statistics are kept; envelopes glide into the new
+   * time constants within a couple of seconds (the transition IS the fade).
+   */
+  setTier(tier: IntensityTier): void {
+    if (tier === this.tier) return;
+    this.tier = tier;
+    this.tuning = ANALYZER_TUNINGS[tier];
+    const d = this.tuning.normDecayPerSec;
+    this.bassPk.setDecay(d);
+    this.midPk.setDecay(d);
+    this.treblePk.setDecay(d);
+    this.levelPk.setDecay(d);
+    // Restart the swell baseline from current energy so entering ambient
+    // doesn't instantly fire a bogus swell.
+    this.swellBaseline = this.features.overall;
+  }
+
+  /**
    * Update all features from a raw byte FFT buffer.
    * `dt` is delta-time in seconds (clamp upstream to avoid huge jumps).
    */
   process(buf: Uint8Array, dt: number): AudioFeatures {
     const f = this.features;
+    const t = this.tuning;
     const safeDt = Math.max(0.0005, Math.min(dt, 0.05));
     this.wallMs += safeDt * 1000;
 
@@ -213,20 +276,22 @@ export class AudioAnalyzer {
     f.treble += (trebleRaw - f.treble) * a1;
     f.overall += (overallRaw - f.overall) * a1;
 
-    // ---- 2. Envelope followers (fast attack / slow release)
-    //   bass:   wants very punchy → 0.7 / 0.06
-    //   mid:    snappy             → 0.55 / 0.08
-    //   treble: shimmery quick     → 0.65 / 0.10
-    f.bassEnv = envFollow(f.bassEnv, bassRaw, 0.7, 0.06, safeDt);
-    f.midEnv = envFollow(f.midEnv, midRaw, 0.55, 0.08, safeDt);
-    f.trebleEnv = envFollow(f.trebleEnv, trebleRaw, 0.65, 0.10, safeDt);
+    // ---- 2. Envelope followers — personality-owned time constants.
+    //   pulse:   fast attack / slow release — drums actually hit.
+    //   ambient: slow attack / very slow release — tide, not punch.
+    f.bassEnv = envFollow(f.bassEnv, bassRaw, t.bassEnvAR[0], t.bassEnvAR[1], safeDt);
+    f.midEnv = envFollow(f.midEnv, midRaw, t.midEnvAR[0], t.midEnvAR[1], safeDt);
+    f.trebleEnv = envFollow(f.trebleEnv, trebleRaw, t.trebleEnvAR[0], t.trebleEnvAR[1], safeDt);
 
-    // ---- 3. Log-spaced spectrum (32 bands)
+    // ---- 3. Log-spaced spectrum (32 bands) — ambient smooths it into a
+    //   drifting horizon; pulse keeps the raw per-frame bars.
     const spec = f.spectrum;
+    const aSpec = t.spectrumFollow > 0 ? 1 - Math.exp(-t.spectrumFollow * safeDt * 60) : 1;
     for (let i = 0; i < spec.length; i++) {
       const a = this.logBandBounds[i];
       const b = Math.max(a + 1, this.logBandBounds[i + 1]);
-      spec[i] = avg(buf, a, b);
+      const v = avg(buf, a, b);
+      spec[i] += (v - spec[i]) * aSpec;
     }
 
     // ---- 4. Spectral flux for onset detection.
@@ -252,18 +317,36 @@ export class AudioAnalyzer {
     const rawOnset = Math.max(0, sigmas);
     const normOnset = this.onsetPk.update(rawOnset, safeDt);
     // Envelope-follow the onset to make it visible-but-spikey
-    f.onset = envFollow(f.onset, normOnset, 0.85, 0.12, safeDt);
+    f.onset = envFollow(f.onset, normOnset, t.onsetAR[0], t.onsetAR[1], safeDt);
 
-    // ---- 5. Beat detection with refractory period.
+    // ---- 5. Events — each personality owns its own semantics.
     f.beat = false;
     const sinceLast = this.wallMs - (f.lastBeatAt || 0);
-    if (sigmas > this.onsetThreshold && sinceLast > this.refractoryMs && f.bassEnv > 0.12) {
-      f.beat = true;
-      f.lastBeatAt = this.wallMs;
-      f.beatPulse = 1;
+    if (t.eventMode === 'beat') {
+      // Spectral-flux hit with refractory period — "this very kick".
+      if (sigmas > this.onsetThreshold && sinceLast > this.refractoryMs && f.bassEnv > 0.12) {
+        f.beat = true;
+        f.lastBeatAt = this.wallMs;
+        f.beatPulse = 1;
+      } else {
+        f.beatPulse = Math.max(0, f.beatPulse - safeDt * t.pulseDecayPerSec);
+      }
     } else {
-      // exponential decay (~300 ms half-life)
-      f.beatPulse = Math.max(0, f.beatPulse - safeDt * 3.0);
+      // Swell: overall energy rising well above its own ~3 s baseline —
+      // "this phrase is cresting". Blooms slowly via pulseDecayPerSec.
+      this.swellBaseline += (overallRaw - this.swellBaseline) * (1 - Math.exp(-0.33 * safeDt));
+      const rise = overallRaw - this.swellBaseline;
+      if (
+        rise > AudioAnalyzer.SWELL_THRESHOLD &&
+        overallRaw > AudioAnalyzer.SWELL_MIN_ENERGY &&
+        sinceLast > AudioAnalyzer.SWELL_REFRACTORY_MS
+      ) {
+        f.beat = true;
+        f.lastBeatAt = this.wallMs;
+        f.beatPulse = 1;
+      } else {
+        f.beatPulse = Math.max(0, f.beatPulse - safeDt * t.pulseDecayPerSec);
+      }
     }
 
     // ---- 6. Adaptive normalisation
@@ -294,31 +377,7 @@ export class AudioAnalyzer {
     f.level = 0;
     for (let i = 0; i < f.spectrum.length; i++) f.spectrum[i] = 0;
     for (let i = 0; i < this.prevSpectrum.length; i++) this.prevSpectrum[i] = 0;
+    this.swellBaseline = 0;
     this.wallMs = 0;
-  }
-}
-
-/**
- * Apply a global intensity profile to the analyser's features IN PLACE.
- * Call this every frame right after `analyzer.process(...)`.
- *
- * The analyser's own state (envelopes, peak trackers, onset stats) is
- * untouched — only the values the visualisations READ get scaled, so the
- * detector still adapts correctly to the track.
- */
-export function applyIntensity(f: AudioFeatures, profile: IntensityProfile): void {
-  const { envScale, onsetScale, beatScale, normScale, beatPassThrough } = profile;
-  f.bassEnv = Math.min(1.4, f.bassEnv * envScale);
-  f.midEnv = Math.min(1.4, f.midEnv * envScale);
-  f.trebleEnv = Math.min(1.4, f.trebleEnv * envScale);
-  f.onset = Math.min(1.6, f.onset * onsetScale);
-  f.beatPulse = Math.min(1.6, f.beatPulse * beatScale);
-  f.bassNorm = Math.min(1.4, f.bassNorm * normScale);
-  f.midNorm = Math.min(1.4, f.midNorm * normScale);
-  f.trebleNorm = Math.min(1.4, f.trebleNorm * normScale);
-  f.levelNorm = Math.min(1.4, f.levelNorm * normScale);
-  // Ambient: occasionally suppress beat events so the scene rests
-  if (beatPassThrough < 1 && f.beat) {
-    if (Math.random() > beatPassThrough) f.beat = false;
   }
 }

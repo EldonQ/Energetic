@@ -3,9 +3,7 @@ import { audioEngine } from './AudioEngine';
 import { extractBands, lerp, type Bands } from './fft';
 import {
   AudioAnalyzer,
-  applyIntensity,
   createEmptyFeatures,
-  INTENSITY_PROFILES,
   type AudioFeatures,
 } from './analyzer';
 import { usePlayerStore } from '@/store/playerStore';
@@ -47,13 +45,11 @@ function useAudioData() {
         ref.treble = lerp(ref.treble, b.treble, 0.35);
         ref.overall = lerp(ref.overall, b.overall, 0.25);
 
-        // Rich feature set
-        const feats = analyzer.process(buf, dt);
-        // Apply global intensity profile (subscribed from Zustand without
-        // triggering React re-renders).
-        const tier = useUIStore.getState().intensity;
-        applyIntensity(feats, INTENSITY_PROFILES[tier]);
-        sharedFeaturesRef.current = feats;
+        // Rich feature set — personality (ambient/pulse) lives inside the
+        // analyser; setTier is a no-op unless the user switched tiers.
+        // (Read from Zustand without triggering React re-renders.)
+        analyzer.setTier(useUIStore.getState().intensity);
+        sharedFeaturesRef.current = analyzer.process(buf, dt);
       }
 
       // throttled timestamp publish
