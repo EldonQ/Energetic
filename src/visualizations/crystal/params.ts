@@ -2,16 +2,16 @@ import type { ParamSchema } from '@/visualizations/types';
 
 export const crystalParams = {
   radius: 1.4,
-  detail: 4,
-  bassMult: 0.55,
-  midMult: 0.22,
-  trebleMult: 0.09,
-  intensity: 1.0,
+  detail: 2,
+  bassMult: 0.3,
+  midMult: 0.7,
+  trebleMult: 0.3,
+  intensity: 1.8,
   rotateSpeed: 0.12,
-  baseColor: '#f5f5f5',
-  edgeColor: '#bfe5ff',
-  alphaCore: 0.06,
-  alphaEdge: 0.9,
+  baseColor: '#46586a',
+  edgeColor: '#8fb8e0',
+  alphaCore: 0,
+  alphaEdge: 0.5,
 };
 
 export type CrystalParams = typeof crystalParams;
