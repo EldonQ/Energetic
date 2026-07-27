@@ -13,7 +13,12 @@ dist-ssr
 *.sw?
 public/audio/manifest.json
 public/audio/*.mp3
-public/LRC/
+# demo tracks committed for the live GitHub Pages deployment
+!public/audio/Daylight.mp3
+!public/audio/一路向北.mp3
+# ignore LRC contents (not the dir itself) so demo lyrics can be whitelisted
+public/LRC/*
+!public/LRC/一路向北.lrc
 .claude/settings.local.json
 # ad-hoc verification screenshots dropped at repo root
 /*.png
@@ -21,3 +26,5 @@ public/LRC/
 /publish/
 # local demo-video recording tool (needs `npm i --no-save puppeteer-core`)
 /record-demo.mjs
+# local-only HyperFrames video projects (SDM explainer series) — never push
+/sdm-videos/
