@@ -5,6 +5,7 @@ import vert from './crystal.vert.glsl';
 import frag from './crystal.frag.glsl';
 import { sharedFeaturesRef } from '@/audio/useAudioData';
 import { useUIStore } from '@/store/uiStore';
+import { CrystalEnvironment } from './CrystalEnvironment';
 import type { CrystalParams } from './params';
 
 export function Crystal({ params }: { params: CrystalParams }) {
@@ -84,5 +85,10 @@ export function Crystal({ params }: { params: CrystalParams }) {
     }
   });
 
-  return <mesh ref={meshRef} geometry={geometry} material={material} renderOrder={2} />;
+  return (
+    <>
+      <CrystalEnvironment params={params} />
+      <mesh ref={meshRef} geometry={geometry} material={material} renderOrder={2} />
+    </>
+  );
 }
