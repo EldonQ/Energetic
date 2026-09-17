@@ -1,72 +1,91 @@
-/**
- * LRC parsing + track-title ⇄ lyric-file matching.
- * Self-contained: no imports from the rest of the app.
- */
-
 export interface LrcLine {
-  time: number; // seconds
+  time: number;
   text: string;
+  secondaryText?: string;
 }
 
-/** e.g. "[01:23.45]" / "[01:23]" — a line may carry several timestamps. */
 const TIME_TAG = /\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
+const META_TAG = /\[(?:ar|ti|al|by|offset|re|ve|length):[^\]]*\]/gi;
+const CREDIT_ROLE = /^(?:作词|作曲|词曲|编曲|原唱|制作人|制作协力|配唱制作|配唱编写|人声设计|音乐总监|音响总监|音乐监制|乐队队长|音乐制作助理|(?:低音)?吉他|贝斯|鼓|鼓组音频编辑|键盘|钢琴|大提琴|弦乐(?:编写)?|和[声音](?:编写)?|录音(?:师|室|工作室)?|混音(?:师|室)?|音乐混音|母带(?:制作|工程师|后期处理录音室)|后期母带处理(?:制作人|录音室|录音师)|PGM)\d*$/i;
+const ENGLISH_CREDIT = /^(?:lyrics(?: by)?|compos(?:er|ed by)|arrang(?:er|ement|ed by)|producer|produced by|mixed by|mixing(?: engineer| studio)?|mastering(?: engineer| studio| producer)?|recording(?: engineer| studio)?|guitar|bass|drums|strings|background vocals?|vocal production)$/i;
 
-/**
- * Credit header lines like "作词 : 刘嘉星" / "Mixed by: X".
- * Netease-style LRCs prepend a block of these with fake 1s-apart timestamps;
- * they're production credits, not lyrics, so we drop them (only within the
- * first 30 s — a colon later in an actual lyric line is left alone).
- */
-const CREDIT_LINE = /^\s*[^:：]{1,24}\s*[:：]\s*\S/;
+function isCredit(text: string): boolean {
+  const separator = text.search(/[:：]/);
+  if (separator < 0) return false;
+  const label = text.slice(0, separator).trim();
+  if (ENGLISH_CREDIT.test(label)) return true;
+  const roles = label.replace(/\s+[A-Za-z].*$/, '').split(/[\/&、]/);
+  return roles.every((role) => CREDIT_ROLE.test(role.trim()));
+}
 
 export function parseLrc(raw: string): LrcLine[] {
-  const lines: LrcLine[] = [];
+  const cues = new Map<number, string[]>();
   for (const rawLine of raw.split(/\r?\n/)) {
+    const text = rawLine.replace(TIME_TAG, '').replace(META_TAG, '').trim();
+    if (!text || isCredit(text)) continue;
     TIME_TAG.lastIndex = 0;
-    const text = rawLine.replace(TIME_TAG, '').trim();
-    if (!text) continue;
-    TIME_TAG.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = TIME_TAG.exec(rawLine)) !== null) {
-      const min = parseInt(m[1], 10);
-      const sec = parseInt(m[2], 10);
-      const fracRaw = m[3] ?? '0';
-      const frac = parseInt(fracRaw, 10) / 10 ** fracRaw.length;
-      const time = min * 60 + sec + frac;
-      if (time < 30 && CREDIT_LINE.test(text)) continue;
-      lines.push({ time, text });
+    let match: RegExpExecArray | null;
+    while ((match = TIME_TAG.exec(rawLine)) !== null) {
+      const fraction = match[3] ?? '0';
+      const time = Number(match[1]) * 60 + Number(match[2]) + Number(fraction) / 10 ** fraction.length;
+      const texts = cues.get(time) ?? [];
+      if (!texts.includes(text)) texts.push(text);
+      cues.set(time, texts);
     }
   }
-  return lines.sort((a, b) => a.time - b.time);
+  return [...cues.entries()].sort(([a], [b]) => a - b).map(([time, texts]) => {
+    // Same-time translations belong to one cue; prefer the Latin-script main line.
+    texts.sort((a, b) => Number(/\p{Script=Han}/u.test(a)) - Number(/\p{Script=Han}/u.test(b)));
+    return texts.length > 1
+      ? { time, text: texts[0], secondaryText: texts.slice(1).join('\n') }
+      : { time, text: texts[0] };
+  });
 }
 
-/** Lowercase, strip bracketed asides + all punctuation/whitespace. */
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[(（\[【][^)）\]】]*[)）\]】]/g, '')
-    .replace(/[^\p{L}\p{N}]/gu, '');
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 }
 
-/**
- * Pick the best .lrc filename for a track title.
- * Exact normalized match wins; otherwise a prefix match either way
- * (handles "不将就 (电影…片尾曲).lrc" vs. ID3 title "不将就").
- */
-export function matchLrcFile(title: string, files: string[]): string | null {
-  const target = normalize(title);
+function titleKey(title: string): string {
+  return normalize(title
+    .replace(/\s*-?\s*《[^》]+》(?:电影|电视剧).*(?:曲|歌)\s*$/, '')
+    .replace(/[(（][^)）]*(?:电影|电视剧)[^)）]*[)）]/g, '')
+    .replace(/live\s*版/gi, 'live'));
+}
+
+function artists(artist = ''): string[] {
+  // Archive/promotional tags are not artist identities, so only the exact title can disambiguate them.
+  if (/UNKNOWN ARCHIVE|工作室|榜单/i.test(artist)) return [];
+  return artist.replace(/[(（][^)）]*[)）]/g, '').split(/[,，、/&;；]/).map(normalize).filter(Boolean);
+}
+
+export function matchLrcFile(track: { title: string; artist?: string }, files: string[]): string | null {
+  const target = titleKey(track.title);
   if (!target) return null;
-  let prefix: string | null = null;
-  for (const f of files) {
-    const name = normalize(f.replace(/\.lrc$/i, ''));
-    if (!name) continue;
-    if (name === target) return f;
-    if (!prefix && (name.startsWith(target) || target.startsWith(name))) prefix = f;
+  const candidates = files.filter((file) => /\.lrc$/i.test(file)).map((file) => {
+    const stem = file.replace(/\.lrc$/i, '');
+    const separator = stem.lastIndexOf(' - ');
+    return {
+      file,
+      title: titleKey(separator < 0 ? stem : stem.slice(0, separator)),
+      artists: artists(separator < 0 ? '' : stem.slice(separator + 3)),
+    };
+  }).filter((candidate) => candidate.title === target);
+  const performers = artists(track.artist);
+  if (performers.length) {
+    const matching = candidates.filter((candidate) => candidate.artists.some((artist) => performers.includes(artist)));
+    if (matching.length) return matching.length === 1 ? matching[0].file : null;
+    const unnamed = candidates.filter((candidate) => !candidate.artists.length);
+    return unnamed.length === 1 ? unnamed[0].file : null;
   }
-  return prefix;
+  return candidates.length === 1 ? candidates[0].file : null;
 }
 
-/** Index of the line active at `time`, or -1 before the first line. */
+export function lrcFileUrl(base: string, file: string): string {
+  // Vite's public lookup uses decodeURI, which leaves encoded commas intact.
+  return `${base}SongLRC/${encodeURIComponent(file).replace(/%2C/g, ',')}`;
+}
+
 export function findActiveIndex(lines: LrcLine[], time: number): number {
   let lo = 0;
   let hi = lines.length - 1;

@@ -135,8 +135,8 @@ export function LyricsOverlay() {
         )}
       </p>
 
-      <p className="mx-auto mt-2 max-w-2xl truncate text-xs tracking-[0.2em] text-dim/80">
-        {next?.text ?? ' '}
+      <p className="mx-auto mt-2 max-w-2xl whitespace-pre-line text-xs tracking-[0.2em] text-dim/80">
+        {current?.secondaryText ?? next?.text ?? ' '}
       </p>
     </div>
   );

@@ -1,6 +1,6 @@
 # Echoes Art Museum
 
-> Drop your MP3s, get an audio-reactive WebGL gallery in dark museum aesthetics.
+> Drop your MP3s or FLACs, get an audio-reactive WebGL gallery in dark museum aesthetics.
 
 [![Version](https://img.shields.io/badge/version-v1.0.0-bfe5ff?labelColor=0a0a0a)](https://github.com/EldonQ/Energetic/releases/tag/v1.0.0)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-eldonq.github.io%2FEnergetic-181717?logo=github)](https://eldonq.github.io/Energetic/)
@@ -16,10 +16,11 @@ and a real-time intensity selector. Built on Vite + React 18 + Three.js
 
 ### 中文 TL;DR
 
-深色极简的本地音乐可视化网页。把 MP3 拖进 `public/audio/`，Vite 插件自动扫描
-生成播放列表 + ID3 元数据，6 套可视化（晶体 / 数据壁 / 液态金属 / 点云断层 /
-山脊飞行 / 尘球）按节拍、能量、低中高频实时响应。右上角可切换 **氛围 / 律动** 两档
-全局律动强度，以及中/英文界面。本仓库无内置 MP3，请自行准备版权允许的素材。
+深色极简的本地音乐可视化网页。把 MP3 / FLAC 放进 `public/audio/`，Vite 插件自动扫描
+生成播放列表与元数据，6 套可视化（晶体 / 数据壁 / 液态金属 / 点云断层 /
+山脊飞行 / 尘球）按节拍、能量、低中高频实时响应。右上角可切换 **氛围 / 律动** 两种
+分析风格，以及中/英文界面。新增音乐请自行准备版权允许的素材。
+歌词放入 `public/SongLRC/`，采用 LRC；保留 SRT 原件但不解析，不自动调整时间轴。
 
 ---
 
@@ -36,17 +37,19 @@ and a real-time intensity selector. Built on Vite + React 18 + Three.js
 
 ## 🎚 Global intensity tiers
 
-A two-button toggle in the header re-scales every viz's reactivity globally
-without touching per-scene parameter sliders:
+A two-button toggle selects independent analyser personalities without
+changing per-scene parameter sliders:
 
-- **Ambient** — softer envelopes, fewer beat events; suited to classical /
-  ambient material.
-- **Pulse** *(default)* — engineer-tuned identity transform; matches the
-  analyser's raw, punchy output.
+- **Ambient** — quick response with longer afterglow; sustained energy rises
+  create slow swells.
+- **Pulse** — spectral-flux transients create short beat envelopes.
 
-Implementation: `src/audio/analyzer.ts` → `applyIntensity()`. Profiles run as a
-post-process on `AudioFeatures` each frame, so the adaptive peak tracker still
-sees the un-scaled signal.
+`src/audio/analyzer.ts` scores transients against historical statistics before
+updating its baseline. Timing is measured in seconds, frequency boundaries
+follow the actual AudioContext sample rate, and track changes/seeks reset
+analysis history. Crystal and Monolith consume the shared event envelope.
+Run `npm test` for dependency-free regression tests at 30/60/90/120/144 fps,
+jittered frame intervals, silence, resets, frequency bands, lyrics and manifests.
 
 ## 🚀 Quick start
 
@@ -55,8 +58,8 @@ git clone https://github.com/EldonQ/Energetic.git
 cd Energetic
 npm install
 
-# 1) Drop any *.mp3 files into public/audio/
-#    (the Vite plugin scans them and emits manifest.json with ID3 tags)
+# 1) Drop *.mp3 / *.flac files into public/audio/
+#    (case-insensitive; manifest.json includes tags and filename fallbacks)
 # 2) Run the dev server
 npm run dev
 # → http://localhost:5173
@@ -87,20 +90,29 @@ A workflow at `.github/workflows/deploy-pages.yml` builds and deploys to the
 The build sets `VITE_BASE=/Energetic/` so all asset URLs (including the audio
 manifest) work under the subpath.
 
+The live demo includes Daylight, 一路向北, 爱我还是他, 爱错(Live), 麻雀, and 模特.
+The four added tracks include matching LRC lyrics; 爱错(Live) uses native FLAC
+playback. Only these six audio files and four LRCs are whitelisted in Git;
+other local media and generated manifests remain ignored.
+
 ### Other hosts
 
 `dist/` is a vanilla static SPA — Netlify, Cloudflare Pages, S3 + CloudFront,
 Vercel, or any static host work the same way. Set `VITE_BASE` if you serve
 from a non-root path.
 
-## 🎵 About the MP3s
+## Local audio (MP3 / FLAC)
 
-This repo does **not** include music files (see `.gitignore`). After cloning,
-drop your own `.mp3`s into `public/audio/` — they're scanned at build time by
-`plugins/vite-plugin-audio-manifest.ts`, which uses
-[`music-metadata`](https://github.com/borewit/music-metadata) to read ID3 tags
-into a `manifest.json` consumed by the player. Filenames of the form
-`YYYY-MM-DD_*.mp3` populate the "archive date" field.
+Add your own `.mp3` / `.flac` files to `public/audio/`. Local additions are
+ignored by Git except the existing demo whitelist. The manifest plugin uses
+[`music-metadata`](https://github.com/borewit/music-metadata) to read tags and
+duration; missing tags fall back to `Artist - Title.ext`. Filenames beginning
+with `YYYY-MM-DD` or `YYYY_MM_DD` populate the archive date without being split
+as artist/title. Scanning and development file watching are case-insensitive.
+Playback uses the browser's native HTMLAudioElement decoder and the same Web
+Audio analysis path for both formats; there is no transcoding fallback.
+A local production build copies these files into `dist/`, so review its media
+contents before publishing even though the source media are gitignored.
 
 > For deployed demos you'll want a couple of short, royalty-free tracks
 > committed to a fork of this repo so visitors actually hear something.
@@ -108,12 +120,16 @@ into a `manifest.json` consumed by the player. Filenames of the form
 
 ## 🎤 Synced lyrics (optional)
 
-Drop standard `.lrc` files into `public/LRC/` (gitignored, like the MP3s) and
-matching tracks get a museum-caption style lyric line near the bottom of the
-canvas — current line engraved, next line ghosted. Files are matched to
-tracks by normalized title (bracketed asides ignored), production-credit
-header lines are filtered out, and tracks without a match simply show
-nothing. Press `L` to toggle the overlay.
+Drop UTF-8 `.lrc` files into `public/SongLRC/` (gitignored except the four demo LRCs). Use
+`Title - Artist.lrc`; matching uses the exact normalized title and available
+artist identity. `Live` and `Live版` are equivalent, while live/studio and
+Remix versions stay separate. Ambiguous or absent matches show no lyrics.
+Explicit production roles are filtered at both ends of the track, while
+ordinary lyric colons are preserved. Same-time bilingual lines share a cue:
+English above Chinese, otherwise the next line appears as a preview.
+The fill is line-level interpolation, not word-timed synchronization. SRT
+files can remain alongside LRCs but are not indexed or parsed. No timing
+stretch or automatic offset is applied. Press `L` to toggle the overlay.
 
 The feature is fully self-contained: `src/lyrics/` +
 `plugins/vite-plugin-lrc-manifest.ts`, mounted by one line each in `App.tsx`

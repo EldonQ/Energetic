@@ -41,8 +41,20 @@ class AudioEngine {
   }
 
   sample(): Uint8Array<ArrayBuffer> {
-    if (this.analyser) this.analyser.getByteFrequencyData(this.buffer);
+    if (this.el?.paused || this.el?.seeking || !this.el?.readyState) {
+      this.buffer.fill(0);
+    } else if (this.analyser) {
+      this.analyser.getByteFrequencyData(this.buffer);
+    }
     return this.buffer;
+  }
+
+  get sampleRate(): number {
+    return this.ctx?.sampleRate ?? 44100;
+  }
+
+  get fftSize(): number {
+    return this.analyser?.fftSize ?? 1024;
   }
 
   get ready(): boolean {

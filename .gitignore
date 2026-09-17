@@ -12,13 +12,21 @@ dist-ssr
 *.sln
 *.sw?
 public/audio/manifest.json
-public/audio/*.mp3
+public/audio/*.[mM][pP]3
+public/audio/*.[fF][lL][aA][cC]
 # demo tracks committed for the live GitHub Pages deployment
 !public/audio/Daylight.mp3
 !public/audio/一路向北.mp3
-# ignore LRC contents (not the dir itself) so demo lyrics can be whitelisted
+!public/audio/陶喆-爱我还是他.mp3
+!public/audio/王力宏 - 爱错(Live).flac
+!public/audio/李荣浩-麻雀.mp3
+!public/audio/模特.mp3
+public/SongLRC/*
+!public/SongLRC/爱我还是他 - 陶喆.lrc
+!public/SongLRC/爱错(Live) - 王力宏.lrc
+!public/SongLRC/麻雀 - 李荣浩.lrc
+!public/SongLRC/模特 - 李荣浩.lrc
 public/LRC/*
-!public/LRC/一路向北.lrc
 .claude/settings.local.json
 # ad-hoc verification screenshots dropped at repo root
 /*.png

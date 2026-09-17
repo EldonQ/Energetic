@@ -46,9 +46,6 @@ export function Crystal({ params }: { params: CrystalParams }) {
     uniforms.uAlphaEdge.value = params.alphaEdge;
   }, [params.intensity, params.baseColor, params.edgeColor, params.alphaCore, params.alphaEdge, uniforms]);
 
-  // Beat-driven scale punch (afterglow of a kick → mesh briefly inflates)
-  const beatPunchRef = useRef(0);
-
   useFrame((_state, delta) => {
     const f = sharedFeaturesRef.current;
     const dt = Math.min(delta, 0.05);
@@ -70,17 +67,12 @@ export function Crystal({ params }: { params: CrystalParams }) {
       uniforms.uTreble.value = trebleDrive;
     }
 
-    // Beat punch: latch at 1 on a beat, decay
-    if (f.beat) beatPunchRef.current = 1;
-    beatPunchRef.current = Math.max(0, beatPunchRef.current - dt * 4.5);
-
     if (meshRef.current) {
       if (!reducedMotion) {
         meshRef.current.rotation.y += dt * params.rotateSpeed * (1 + f.midEnv * 0.6);
         meshRef.current.rotation.x = Math.sin(uniforms.uTime.value * 0.25) * 0.18;
       }
-      // Brief scale punch on each kick
-      const s = 1 + beatPunchRef.current * 0.08 + f.bassEnv * 0.04;
+      const s = reducedMotion ? 1 : 1 + f.beatPulse * 0.08 + f.bassEnv * 0.04;
       meshRef.current.scale.setScalar(s);
     }
   });

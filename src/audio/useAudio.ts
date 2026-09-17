@@ -44,15 +44,15 @@ export function useAudio() {
   useEffect(() => {
     const el = ref.current;
     if (!el || !track) return;
+    let cancelled = false;
     if (isPlaying) {
-      // Lazy init on user gesture (the click that set isPlaying=true)
       (async () => {
         try {
           await audioEngine.init();
           await audioEngine.resume();
-          await el.play();
+          if (!cancelled) await el.play();
         } catch (err) {
-          // eslint-disable-next-line no-console
+          if (cancelled) return;
           console.warn('[audio] play() blocked:', err);
           setPlaying(false);
         }
@@ -60,6 +60,7 @@ export function useAudio() {
     } else {
       el.pause();
     }
+    return () => { cancelled = true; };
   }, [isPlaying, track?.file, setPlaying]);
 
   // wire 'ended' -> next track, 'loadedmetadata' -> duration

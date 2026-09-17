@@ -52,9 +52,6 @@ export function Monolith({ params }: { params: MonolithParams }) {
     instance.count = Math.max(4, Math.min(Math.round(params.bars), MAX_BARS));
   }, [params.bars, instance]);
 
-  // Beat flash brightness booster
-  const beatFlashRef = useRef(0);
-
   useFrame((_state, delta) => {
     const f = sharedFeaturesRef.current;
     const n = instance.count;
@@ -81,10 +78,7 @@ export function Monolith({ params }: { params: MonolithParams }) {
     baseColorObj.set(params.baseColor);
     peakColorObj.set(params.peakColor);
 
-    // Beat flash
-    if (f.beat) beatFlashRef.current = 1;
-    beatFlashRef.current = Math.max(0, beatFlashRef.current - dt * 3.0);
-    const beatBoost = 1 + beatFlashRef.current * 0.9;
+    const beatBoost = reducedMotion ? 1 : 1 + f.beatPulse * 0.9;
 
     for (let i = 0; i < n; i++) {
       // Map bar index → log-spectrum band index (linear within freqLow..freqHigh range)

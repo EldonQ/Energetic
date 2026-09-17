@@ -2,8 +2,10 @@ import type { Plugin, ViteDevServer } from 'vite';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+const AUDIO_EXTENSION = /\.(mp3|flac)$/i;
+
 /**
- * Auto-scan public/audio/*.mp3 and emit public/audio/manifest.json
+ * Auto-scan public/audio MP3/FLAC files and emit public/audio/manifest.json
  * Watches the folder during dev; rebuilds on add/remove.
  *
  * Tries to read ID3 tags via `music-metadata` (optional dep);
@@ -17,7 +19,7 @@ export function audioManifest(): Plugin {
     try {
       await fs.mkdir(audioDir, { recursive: true });
       const files = (await fs.readdir(audioDir))
-        .filter((f) => f.toLowerCase().endsWith('.mp3'))
+        .filter((f) => AUDIO_EXTENSION.test(f))
         .sort();
 
       // Try dynamic import; if it fails we fall back to filename-only metadata.
@@ -31,16 +33,20 @@ export function audioManifest(): Plugin {
 
       const tracks = await Promise.all(
         files.map(async (file, i) => {
-          let title = file.replace(/\.mp3$/i, '');
-          let artist = 'UNKNOWN ARCHIVE';
+          const stem = file.replace(AUDIO_EXTENSION, '');
+          const parts = /^\d{4}[-_]\d{2}[-_]\d{2}/.test(stem)
+            ? null
+            : stem.match(/^(.+?)\s*-\s*(.+)$/);
+          let title = parts?.[2].trim() ?? stem;
+          let artist = parts?.[1].trim() ?? 'UNKNOWN ARCHIVE';
           let duration = 0;
           let year: number | undefined;
 
           if (parseFile) {
             try {
               const meta = await parseFile(path.join(audioDir, file));
-              title = meta?.common?.title ?? title;
-              artist = meta?.common?.artist ?? artist;
+              title = meta?.common?.title?.trim() || title;
+              artist = meta?.common?.artist?.trim() || artist;
               duration = meta?.format?.duration ?? 0;
               year = meta?.common?.year;
             } catch {
@@ -59,7 +65,7 @@ export function audioManifest(): Plugin {
             // Relative path — the consumer prefixes import.meta.env.BASE_URL
             // so the same manifest works under any deploy base
             // (e.g. "/" on Vercel, "/Energetic/" on GitHub Pages).
-            file: `audio/${encodeURIComponent(file)}`,
+            file: `audio/${encodeURIComponent(file).replace(/%2C/g, ',')}`,
             title,
             artist,
             duration,
@@ -87,7 +93,7 @@ export function audioManifest(): Plugin {
     configureServer(server: ViteDevServer) {
       server.watcher.add(audioDir);
       const onChange = (p: string) => {
-        if (p.toLowerCase().endsWith('.mp3')) buildManifest();
+        if (AUDIO_EXTENSION.test(p)) return buildManifest();
       };
       server.watcher.on('add', onChange);
       server.watcher.on('unlink', onChange);
